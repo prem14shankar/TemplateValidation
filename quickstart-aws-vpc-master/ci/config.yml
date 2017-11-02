@@ -1,0 +1,18 @@
+global:
+  regions:
+    - ap-northeast-1
+    - eu-central-1
+    - eu-west-1
+    - us-east-1
+tests:
+  public:
+    parameter_input: parameters.json
+    template_file: pod-vars.template.json
+    
+ Override_scenario1:
+    specific_region_test:
+    regions:
+      - us-east-1
+    parameter_input: parameters.json
+    template_file: pod-vars.template.json
+    

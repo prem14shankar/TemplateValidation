@@ -1,0 +1,565 @@
+{
+	"AWSTemplateFormatVersion": "2010-09-09",
+
+	"Description": "v0.2.0 Pod-specific variables for bootstrapping other stacks.",
+
+	"Metadata": {
+		"AWS::CloudFormation::Interface": {
+			"ParameterGroups": [{
+					"Label": {
+						"default": "Stack Information"
+					},
+					"Parameters": ["parPodNumber", "parPurpose", "parOwner"]
+				}
+			]
+		}
+	},
+
+	"Parameters": {
+		"parPodNumber": {
+			"Description": "Specifies the pod number within a given region. Will also be used for the VPC CIDR block.",
+			"Type": "Number",
+			"MinValue": "0",
+			"MaxValue": "255",
+			"Default": "123",
+			"ConstraintDescription": "Must be between 0 and 255."
+		},
+		"parOwner": {
+			"Description": "Person who owns the stack",
+			"Type": "String",
+			"Default": "Name Lastname",
+			"AllowedPattern": "[a-zA-Z0-9 ]*"
+		},
+		"parTeam": {
+			"Description": "Team who owns the stack",
+			"Type": "String",
+			"Default": "A-Team",
+			"AllowedPattern": "[a-zA-Z0-9 -]*"
+		},
+		"parPurpose": {
+			"Description": "Purpose and/or reason for this stack's existence",
+			"Type": "String",
+			"ConstraintDescription": "Only alphanumeric and a very limited set of special characters.",
+			"AllowedPattern": "[a-zA-Z0-9_ .@-]*"
+		},
+		"parSnippetS3Bucket": {
+			"Description": "AWS S3 Bucket location for snippets",
+			"Type": "String",
+			"AllowedValues": [
+				"s3://icumedical-research-devops/cloudformation/snippets/mapping.research.snippet.json",
+				"s3://icumedical-development-devops/cloudformation/snippets/mapping.development.snippet.json",
+				"s3://icumedical-staging-devops/cloudformation/snippets/mapping.staging.snippet.json",
+				"s3://icumedical-testing-devops/cloudformation/snippets/mapping.testing.snippet.json"],
+			"Default": "s3://icumedical-research-devops/cloudformation/snippets/mapping.research.snippet.json"
+		},
+		"parEnvironmentDNSDomain": {
+			"Description": "Environment DNS Domain for Stack",
+			"Type": "String",
+			"AllowedValues": [
+				"icu-qcore.com",
+				"xiotj.com",
+				"NEITHER"
+			],
+			"Default": "NEITHER"
+		}
+	},
+
+	"Conditions": {
+		"conEnvironmentDNSDomainIsNeither": {
+			"Fn::Equals": [{
+					"Ref": "parEnvironmentDNSDomain"
+				}, "NEITHER"]
+		},
+		"conEnvironmentDNSDomainIsEither": {
+			"Fn::Not": [{
+					"Condition": "conEnvironmentDNSDomainIsNeither"
+				}
+			]
+		}
+	},
+
+	"Mappings": {
+		"mapAWSRegion2OS2AMI": {
+			"us-east-1": {
+				"AMZLinux": "ami-8afe8a9c",
+				"Ubuntu": "ami-8c8efa9a"
+			},
+			"us-east-2": {
+				"AMZLinux": "ami-a6faddc3",
+				"Ubuntu": "ami-7ffdda1a"
+			},
+			"us-west-1": {
+				"AMZLinux": "ami-70f3d510",
+				"Ubuntu": "ami-d1f2d4b1"
+			},
+			"us-west-2": {
+				"AMZLinux": "ami-a23e5bc2",
+				"Ubuntu": "ami-e13c5981"
+			}
+		},
+
+		"mapSOUP2Versions": {
+			"apache-tomcat-v8.5.15": {
+				"SourceS3Location": "s3://icumedical-research-devops/soup/apache-tomcat/apache-tomcat-8.5.15.tar.gz",
+				"SourceBucketName": "icumedical-research-devops"
+			}
+		},
+
+		"mapVPCSubnetConfig": {
+			"PublicCIDR": {
+				"a": "0",
+				"b": "8",
+				"c": "16"
+			},
+			"PrivateCIDR": {
+				"a": "32",
+				"b": "40",
+				"c": "48"
+			},
+			"JumpCIDR": {
+				"a": "64",
+				"b": "72",
+				"c": "80"
+			}
+		},
+
+		"mapRegion2ZoneID": {
+			"us-east-1": {
+				"S3HhostedzoneID": "Z3AQBSTGFYJSTF",
+				"WebsiteEndpoint": "s3-website-us-east-1.amazonaws.com"
+			},
+			"us-east-2": {
+				"S3HostedZoneID": "Z2O1EMRO9K5GLX",
+				"WebsiteEndpoint": "s3-website.us-east-2.amazonaws.com"
+			},
+			"us-west-1": {
+				"S3HostedZoneID": "Z2F56UZL2M1ACD",
+				"WebsiteEndpoint": "s3-website-us-west-1.amazonaws.com"
+			},
+			"us-west-2": {
+				"S3HostedZoneID": "Z3BJ6K6RIION7M",
+				"WebsiteEndpoint": "s3-website-us-west-2.amazonaws.com"
+			}
+		},
+
+		"mapAWSRegion2MetaData": {
+			"us-east-1": {
+				"AirportCode": "iad"
+			},
+			"us-east-2": {
+				"AirportCode": "cmh"
+			},
+			"us-west-1": {
+				"AirportCode": "sfo"
+			},
+			"us-west-2": {
+				"AirportCode": "pdx"
+			},
+			"ap-south-1": {
+				"AirportCode": "bom"
+			},
+			"ap-southeast-1": {
+				"AirportCode": "sin"
+			},
+			"ap-southeast-2": {
+				"AirportCode": "syd"
+			},
+			"ap-northeast-1": {
+				"AirportCode": "hnd"
+			},
+			"ap-northeast-2": {
+				"AirportCode": "icn"
+			},
+			"ca-central-1": {
+				"AirportCode": "yul"
+			},
+			"eu-central-1": {
+				"AirportCode": "fra"
+			},
+			"eu-west-1": {
+				"AirportCode": "dub"
+			},
+			"eu-west-2": {
+				"AirportCode": "lhr"
+			},
+			"sa-east-1": {
+				"AirportCode": "gru"
+			},
+			"cn-north-1": {
+				"AirportCode": "pek"
+			},
+			"us-gov-west-1": {
+				"AirportCode": "gov"
+			}
+		},
+
+		"mapAWSAccountId2MetaData": {
+			"427452163857": {
+				"EnvCode": "res",
+				"EnvName": "research",
+				"FQDN": "icu-rnd.com",
+				"CFACM": "a93b7517-89b9-4b21-95da-1109757154bd",
+				"CFOAI": "E17AE405A112V1"
+			},
+			"822944125538": {
+				"EnvCode": "dev",
+				"EnvName": "development",
+				"FQDN": "icu-dev.com",
+				"CFACM": "da3361c2-c766-4dea-8824-2b502feec564",
+				"CFOAI": "E2QVIKTCE1DFNG"
+			},
+			"102395103758": {
+				"EnvCode": "sim",
+				"EnvName": "simulation",
+				"FQDN": "icu-alpha.com",
+				"CFACM": "58d5fe5a-501b-4395-a8d3-00a8e7817a82",
+				"CFOAI": "E3KLAQG9ZQ9ABW"
+			},
+			"775202602594": {
+				"EnvCode": "tst",
+				"EnvName": "testing",
+				"FQDN": "icu-vnv.com",
+				"CFACM": "59d3de44-a2ad-4fde-b22e-93f992229825",
+				"CFOAI": "E2Q022KBS2CS0"
+			},
+			"654829864994": {
+				"EnvCode": "stg",
+				"EnvName": "staging",
+				"FQDN": "icu-trunk.com",
+				"QCOREFQDN": "icu-qcore.com"
+			},
+			"247308865742": {
+				"EnvCode": "tmp",
+				"EnvName": "temporary",
+				"FQDN": "icu-hf.com",
+				"CFACM": "e1d58921-4cf3-4f2f-ada7-2b492d18aeb4",
+				"CFOAI": "E3T2NGYYMGFT1S",
+				"BackupEnvCode": "tmp",
+				"BackupEnvName": "temporary",
+				"BackupFQDN": "icu-demo.com",
+				"BackupCFACM": "0694d25b-1d3d-4042-b054-cd683808f2bc",
+				"BackupCFOAI": "EZNQGPILT58LW",
+				"ICUHFFQDN": "icu-hf.com",
+				"ICUHFCFACM": "e1d58921-4cf3-4f2f-ada7-2b492d18aeb4",
+				"ICUHFCFOAI": "E3T2NGYYMGFT1S",
+				"XIOTJFQDN": "xiotj.com",
+				"XIOTJCFACM": "49abc935-2e7a-4727-9092-743560ee55c3",
+				"XIOTJCFOAI": "E3TDCF26K8Q9VV"
+			},
+			"403522603304": {
+				"EnvCode": "rdt",
+				"EnvName": "rdtshared",
+				"SubDomain": "rdt",
+				"FQDN": "rdt.mncrnd.com"
+			},
+			"593708906687": {
+				"EnvCode": "mas",
+				"EnvName": "master",
+				"SubDomain": "master",
+				"FQDN": "master.mncrnd.com"
+			},
+			"769816645031": {
+				"EnvCode": "cor",
+				"EnvName": "corporate",
+				"SubDomain": "corp",
+				"FQDN": "corp.mncrnd.com"
+			},
+			"728075439752": {
+				"EnvCode": "prt",
+				"EnvName": "partner",
+				"SubDomain": "partner",
+				"FQDN": "icu-trinimbus.com",
+				"CFACM": "a9f69543-18ed-4e6f-bea5-8bb3fb5b97b2",
+				"CFOAI": "E2M9L22IQNKH19"
+			},
+			"870338098188": {
+				"EnvCode": "dcm",
+				"EnvName": "devcm",
+				"SubDomain": "devcm",
+				"FQDN": "devcm.mncrnd.com"
+			},
+			"846125897710": {
+				"EnvCode": "dop",
+				"EnvName": "devops",
+				"SubDomain": "devops",
+				"FQDN": "devops.mncrnd.com"
+			},
+			"582127088564": {
+				"EnvCode": "prd",
+				"EnvName": "production",
+				"SubDomain": "prod",
+				"FQDN": "prod.mncrnd.com"
+			}
+		}
+	},
+
+	"Resources": {
+		"resSNSRootTopic": {
+			"Type": "AWS::SNS::Topic",
+			"Properties": {
+				"TopicName": {
+					"Fn::Join": ["", [{
+								"Fn::FindInMap": ["mapAWSRegion2MetaData", {
+										"Ref": "AWS::Region"
+									}, "AirportCode"]
+							}, {
+								"Ref": "parPodNumber"
+							},
+							"-sns-root"
+						]]
+				}
+			}
+		}
+	},
+
+	"Outputs": {
+		"outPodInfoBootstrap": {
+			"Description": "Minimun Information to Bootstrap Pod Details",
+			"Value": {
+				"Fn::Join": [",", [{
+							"Fn::FindInMap": ["mapAWSAccountId2MetaData", {
+									"Ref": "AWS::AccountId"
+								}, "FQDN"]
+						}, {
+							"Fn::FindInMap": ["mapAWSRegion2MetaData", {
+									"Ref": "AWS::Region"
+								}, "AirportCode"]
+						}, {
+							"Ref": "parPodNumber"
+						}, {
+							"Fn::Join": ["", [{
+										"Fn::FindInMap": ["mapAWSRegion2MetaData", {
+												"Ref": "AWS::Region"
+											}, "AirportCode"]
+									}, {
+										"Ref": "parPodNumber"
+									}
+								]]
+						}
+					]]
+			},
+			"Export": {
+				"Name": {
+					"Fn::Join": ["-", [{
+								"Ref": "parPodNumber"
+							}, {
+								"Ref": "AWS::Region"
+							}, {
+								"Ref": "AWS::AccountId"
+							},
+							"pod-info-bootstrap"
+						]]
+				}
+			}
+		},
+		"outPodName": {
+			"Description": "Pod Name",
+			"Value": {
+				"Fn::Join": ["", [{
+							"Fn::FindInMap": ["mapAWSRegion2MetaData", {
+									"Ref": "AWS::Region"
+								}, "AirportCode"]
+						}, {
+							"Ref": "parPodNumber"
+						}
+					]]
+			},
+			"Export": {
+				"Name": {
+					"Fn::Join": ["", [{
+								"Fn::FindInMap": ["mapAWSRegion2MetaData", {
+										"Ref": "AWS::Region"
+									}, "AirportCode"]
+							}, {
+								"Ref": "parPodNumber"
+							}
+						]]
+				}
+			}
+		},
+		"outPodNumber": {
+			"Description": "Pod Number",
+			"Value": {
+				"Ref": "parPodNumber"
+			},
+			"Export": {
+				"Name": {
+					"Fn::Join": ["", [{
+								"Fn::FindInMap": ["mapAWSRegion2MetaData", {
+										"Ref": "AWS::Region"
+									}, "AirportCode"]
+							}, {
+								"Ref": "parPodNumber"
+							},
+							"-pod-num"
+						]]
+				}
+			}
+		},
+		"outPodPurpose": {
+			"Description": "Pod Purpose",
+			"Value": {
+				"Ref": "parPurpose"
+			},
+			"Export": {
+				"Name": {
+					"Fn::Join": ["", [{
+								"Fn::FindInMap": ["mapAWSRegion2MetaData", {
+										"Ref": "AWS::Region"
+									}, "AirportCode"]
+							}, {
+								"Ref": "parPodNumber"
+							},
+							"-pod-purpose"
+						]]
+				}
+			}
+		},
+		"outPodOwner": {
+			"Description": "Pod Owner",
+			"Value": {
+				"Ref": "parOwner"
+			},
+			"Export": {
+				"Name": {
+					"Fn::Join": ["", [{
+								"Fn::FindInMap": ["mapAWSRegion2MetaData", {
+										"Ref": "AWS::Region"
+									}, "AirportCode"]
+							}, {
+								"Ref": "parPodNumber"
+							},
+							"-pod-owner"
+						]]
+				}
+			}
+		},
+		"outPodRegion": {
+			"Description": "Pod Region",
+			"Value": {
+				"Ref": "AWS::Region"
+			},
+			"Export": {
+				"Name": {
+					"Fn::Join": ["", [{
+								"Fn::FindInMap": ["mapAWSRegion2MetaData", {
+										"Ref": "AWS::Region"
+									}, "AirportCode"]
+							}, {
+								"Ref": "parPodNumber"
+							},
+							"-pod-region"
+						]]
+				}
+			}
+		},
+		"outPodRegionAirportCode": {
+			"Description": "Pod Region Airport Code",
+			"Value": {
+				"Fn::FindInMap": ["mapAWSRegion2MetaData", {
+						"Ref": "AWS::Region"
+					}, "AirportCode"]
+			},
+			"Export": {
+				"Name": {
+					"Fn::Join": ["", [{
+								"Fn::FindInMap": ["mapAWSRegion2MetaData", {
+										"Ref": "AWS::Region"
+									}, "AirportCode"]
+							}, {
+								"Ref": "parPodNumber"
+							},
+							"-pod-regioncode"
+						]]
+				}
+			}
+		},
+		"outPodAccountID": {
+			"Description": "Pod Account ID",
+			"Value": {
+				"Ref": "AWS::AccountId"
+			},
+			"Export": {
+				"Name": {
+					"Fn::Join": ["", [{
+								"Fn::FindInMap": ["mapAWSRegion2MetaData", {
+										"Ref": "AWS::Region"
+									}, "AirportCode"]
+							}, {
+								"Ref": "parPodNumber"
+							},
+							"-pod-accountid"
+						]]
+				}
+			}
+		},
+		"outPodEnvCode": {
+			"Description": "Pod Environment Code",
+			"Value": {
+				"Fn::FindInMap": ["mapAWSAccountId2MetaData", {
+						"Ref": "AWS::AccountId"
+					}, "EnvCode"]
+			},
+			"Export": {
+				"Name": {
+					"Fn::Join": ["", [{
+								"Fn::FindInMap": ["mapAWSRegion2MetaData", {
+										"Ref": "AWS::Region"
+									}, "AirportCode"]
+							}, {
+								"Ref": "parPodNumber"
+							},
+							"-pod-envcode"
+						]]
+				}
+			}
+		},
+		"outPodEnvName": {
+			"Description": "Pod Environment Name",
+			"Value": {
+				"Fn::FindInMap": ["mapAWSAccountId2MetaData", {
+						"Ref": "AWS::AccountId"
+					}, "EnvName"]
+			},
+			"Export": {
+				"Name": {
+					"Fn::Join": ["", [{
+								"Fn::FindInMap": ["mapAWSRegion2MetaData", {
+										"Ref": "AWS::Region"
+									}, "AirportCode"]
+							}, {
+								"Ref": "parPodNumber"
+							},
+							"-pod-envname"
+						]]
+				}
+			}
+		},
+		"outPodFqdn": {
+			"Description": "Pod Environment Fully Qualified Subdomain Name",
+			"Value": {
+				"Fn::If": ["conEnvironmentDNSDomainIsNeither", {
+						"Fn::FindInMap": ["mapAWSAccountId2MetaData", {
+								"Ref": "AWS::AccountId"
+							}, "FQDN"]
+					}, {
+						"Ref": "parEnvironmentDNSDomain"
+					}
+				]
+			},
+			"Export": {
+				"Name": {
+					"Fn::Join": ["", [{
+								"Fn::FindInMap": ["mapAWSRegion2MetaData", {
+										"Ref": "AWS::Region"
+									}, "AirportCode"]
+							}, {
+								"Ref": "parPodNumber"
+							},
+							"-pod-fqdn"
+						]]
+				}
+			}
+		}
+	}
+}

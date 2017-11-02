@@ -1,0 +1,26 @@
+[
+    {
+        "ParameterKey": "parPodNumber",
+        "ParameterValue": "1"
+    },
+    {
+        "ParameterKey": "parOwner",
+        "ParameterValue": "Prem"
+    },
+    {
+        "ParameterKey": "parTeam",
+        "ParameterValue": "DevOps"
+    },
+    {
+        "ParameterKey": "parPurpose",
+        "ParameterValue": "Testing"
+    },
+    {
+        "ParameterKey": "parSnippetS3Bucket",
+        "ParameterValue": "s3://icumedical-research-devops/cloudformation/snippets/mapping.research.snippet.json"
+    },
+    {
+        "ParameterKey": "parEnvironmentDNSDomain",
+        "ParameterValue": "icu-vnv.com"
+    }
+]
